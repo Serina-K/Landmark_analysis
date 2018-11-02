@@ -28,7 +28,7 @@ class PScor_calculator():
     TODO 
     """
     def __init__(self):
-        self.pcor_anno1, self.pcor_anno2 = [], []
+        self.pcscor_anno1, self.pcscor_anno2 = [], []
         self.annotator1, self.annotator2, self.vals = [], [], []
         
         self.clipvar_fnames = file_tools.get_data_fnames(constants.CLIP_VAR_DIR, 'clipvar_')  
@@ -47,7 +47,7 @@ class PScor_calculator():
             print('Var.\tAnnot-1\tAnnot-2'.format(partipant_no))
         
             for key in self.keys:
-                self.pcor_anno1, self.pcor_anno2 = [], []
+                self.pcscor_anno1, self.pcscor_anno2 = [], []
                 self.annotator1, self.annotator2, self.vals = [], [], []
                 
                 for clipvar_fname in self.clipvar_fnames:
@@ -67,13 +67,13 @@ class PScor_calculator():
                 temp_anno2 = np.asarray([y for x,y in zip(self.vals,self. annotator2) if np.isfinite(x)])
             
                 if len(temp_vals):
-                    self.pcor_anno1 = polycor.polyserial(temp_vals, temp_anno1, ML = True, control = list(), std_err = False, maxcor=.9999, bins=4) 
-                    self.pcor_anno2 = polycor.polyserial(temp_vals, temp_anno2, ML = True, control = list(), std_err = False, maxcor=.9999, bins=4) 
+                    self.pcscor_anno1 = polycor.polyserial(temp_vals, temp_anno1, ML = True, control = list(), std_err = False, maxcor=.9999, bins=4) 
+                    self.pcscor_anno2 = polycor.polyserial(temp_vals, temp_anno2, ML = True, control = list(), std_err = False, maxcor=.9999, bins=4) 
             
                 #run_vs_oxy = polycor.polyserial(runtime, oxygen, ML = True, control = list(), std_err = False, maxcor=.9999, bins=4)
         
-                if len(self.pcor_anno1) and len(self.pcor_anno2):
-                    print('{}\t{:.4f}\t{:.4f}'.format(key, np.asarray(self.pcor_anno1[0]), np.asarray(self.pcor_anno2[0])))
+                if len(self.pcscor_anno1) and len(self.pcscor_anno2):
+                    print('{}\t{:.4f}\t{:.4f}'.format(key, np.asarray(self.pcscor_anno1[0]), np.asarray(self.pcscor_anno2[0])))
 #
 #        
 #                
