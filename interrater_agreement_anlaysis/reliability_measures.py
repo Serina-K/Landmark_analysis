@@ -42,12 +42,20 @@ def kriAlpha(data,scale):
     alpha nominal: 0.0364, ordinal: 0.5482, interval: 0.5905
     
     """
-    temp1 = np.array([data['annotator1']])
-    temp2 = np.array([data['annotator2']])
-    data =  np.concatenate((temp1, temp2), 0)
-    # get only those columns with 
     
-    data = np.asanyarray(data)
+    if len(data) > 2:
+        temp1 = np.array([data['annotator1']])
+        temp2 = np.array([data['annotator2']])
+        data =  np.concatenate((temp1, temp2), 0)
+        # get only those columns with 
+        
+        data = np.asanyarray(data)
+    elif (len(data) == 2):
+        temp1 = np.array([data['flat_gt']])
+        temp2 = np.array([data['flat_est']])
+        data =  np.concatenate((temp1, temp2), 0)
+
+    
 
     allVals  =  np.unique(data)
     allVals  =  allVals[abs(allVals) < math.inf]
@@ -186,3 +194,43 @@ def fleissKappa(data):
     
     return kappa
 
+def get_binary_error(data): 
+    
+    temp1 = np.array([data['annotator1']])
+    temp2 = np.array([data['annotator2']])
+    
+    binary_error = np.sum( np.invert ( np.equal(temp1 , temp2)))
+    binary_error_perc = binary_error / len(temp1[0])
+    return binary_error_perc
+
+def get_sagr(data):
+    
+    temp1 = np.array([data['annotator1']])
+    temp2 = np.array([data['annotator2']])
+    
+    if (np.max(temp1) > 1) or (np.min(temp1) < -1):
+        temp_est = [x - 3 for x in temp1]
+        temp_gt = [x - 3 for x in temp2]
+    else:
+        temp_est = temp1
+        temp_gt = temp2
+    
+    temp_est = np.sign(temp_est)
+    temp_gt = np.sign(temp_gt)
+    
+    mean_sagr = np.sum(\
+                       np.equal(temp1 , temp2))/\
+                       len(temp1[0])
+    return mean_sagr
+
+def get_rmse_error(data):
+    
+        
+    temp1 = np.array([data['annotator1']])
+    temp2 = np.array([data['annotator2']])
+    
+    rmse = np.sum(\
+                  np.square(\
+                            np.subtract(temp1 , temp2)))/\
+                  len(temp1[0])
+    return rmse
