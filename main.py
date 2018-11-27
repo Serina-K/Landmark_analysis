@@ -12,6 +12,7 @@ warnings.simplefilter("once", UserWarning)
 from clip_builder import *
 from blink_detector import *
 from pscor_calculator import *
+from label_estimator import *
 
 import time
 
@@ -32,15 +33,20 @@ if __name__ == "__main__":
 
     start_time = time.time()
     
-    
-#    builder = Clip_builder()
-#    builder.build_all()
+    #builder = Clip_builder()
+    #builder.build_all()
     
 #    detector = Blink_detector(illustrate = False)
 #    detector.detect()
+#    
+#    calculator = PScor_calculator()
+#    calculator.calculate()
     
-    calculator = PScor_calculator()
-    calculator.calculate()
+    estimator = Label_estimator()
+    estimator.estimate()
+
+    
+    
 
         
     elapsed_time = time.time() - start_time
