@@ -13,6 +13,7 @@ import file_tools as file_tools
 import pickle
 
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
 
 import constants
 from importlib import reload
@@ -26,6 +27,8 @@ class Label_estimator():
     def __init__(self):
         
         self.neigh = KNeighborsClassifier(n_neighbors=12) #10~20 -> 10~40
+        self.svc = SVC()
+
         
         self.clipvar_fnames = file_tools.get_data_fnames(constants.CLIP_VAR_DIR, 'clipvar_')  
         
@@ -92,9 +95,11 @@ class Label_estimator():
                 train_feats, train_gts, test_feat, test_gt = \
                 self.split_train_test_feats(personal_feats, personal_gts, n)
                 
-                self.neigh.fit(train_feats, np.ravel(train_gts))
+                #self.neigh.fit(train_feats, np.ravel(train_gts))
+                #est_label = self.neigh.predict([test_feat])
                 
-                est_label = self.neigh.predict([test_feat])
+                self.svc.fit(train_feats, np.ravel(train_gts))
+                est_label = self.svc.predict([test_feat])
                                 
                 temp_est.append(est_label[0])
                
