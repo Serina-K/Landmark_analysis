@@ -118,8 +118,7 @@ def estimate_thresholds(clipvar_fnames, blink_thresholds, aspect_ratios_v0, aspe
        
 
     for participant in preferences.SUBJECTS:
-        blink_thresholds[participant] = \
-        R0, tempx, tempy = optimize_gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant, False, True)
+        blink_thresholds[participant],  tempx, tempy = optimize_gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant, False, True)
         aspect_smooth[participant] = tempy.copy()
         
         #optimize_gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant, False, True)
@@ -454,8 +453,8 @@ def detect():
     clipvar_fnames, aspect_ratios_v0, aspect_smooth, blink_thresholds = init_mats(illustrate = True)
     
     blink_thresholds = estimate_thresholds(clipvar_fnames, blink_thresholds, aspect_ratios_v0, aspect_smooth)
-    blink_thresholds['buse'] = 0.22
-    blink_thresholds['gokhan'] = 0.16
-    blink_thresholds['esra'] = 0.19
-    blink_thresholds['merve'] = 0.21
+#    blink_thresholds['buse'] = 0.22
+#    blink_thresholds['gokhan'] = 0.16
+#    blink_thresholds['esra'] = 0.19
+#    blink_thresholds['merve'] = 0.21
     set_thresholds_etc(clipvar_fnames, blink_thresholds)
