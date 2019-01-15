@@ -17,6 +17,7 @@ import math
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 from sklearn import mixture
+from scipy import optimize
 
 from importlib import reload
 
@@ -118,8 +119,10 @@ def estimate_thresholds(clipvar_fnames, blink_thresholds, aspect_ratios_v0, aspe
 
     for participant in preferences.SUBJECTS:
         blink_thresholds[participant] = \
-        R0, tempx, tempy = gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant, False, True)
+        R0, tempx, tempy = optimize_gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant, False, True)
         aspect_smooth[participant] = tempy.copy()
+        
+        #optimize_gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant, False, True)
         
     plot_all_aspect_ratios(tempx, aspect_smooth, True)
         
@@ -297,9 +300,14 @@ def gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant,report_results=False,
     t_crop = int((window_len -1)/2)
     y = smooth(n, window_len, window='hanning')
     y_smooth = y[t_crop : -t_crop]
-    y_1st_peak_loc = bin_mids[np.min(np.where(np.sign(np.diff(y_smooth)) == -1))]
-    print('1st peak {}'.format(y_1st_peak_loc))
+    m1_ind = np.min(np.where(np.sign(np.diff(y_smooth)) == -1))
+    m1 = bin_mids[m1_ind] # first local maxima
+    m2_ind = np.argmax(y_smooth) # global maxima
+    m2 = bin_mids[m2_ind] # first local maxima
+    
     plt.plot(bin_mids, y_smooth, 'k--')
+    plt.plot(m1, y_smooth[m1_ind], 'o')
+    plt.plot(m2, y_smooth[m2_ind], 'o')
          
 #    f_cubic   = interp1d(bin_mids, n, kind='cubic')
 #    binx = np.linspace(min(bin_mids),max(bin_mids),1000)
@@ -346,6 +354,100 @@ def gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant,report_results=False,
         plt.show()
     
     return x[R0], bin_mids, y_smooth
+
+def eval_norm(x, m, s):
+    """
+    Evaluate normal distribution for given x with given mean m and std s
+    """
+    return 1/(2*np.pi*s**2)*np.exp(-0.5*(x-m)**2/s**2)
+
+def gmm_2comp(x, s1, s2, w1, w2):
+    """
+    True function is a mixture of two gaussians:
+        w1*N(m1,s2) + w2*N(m2, s2)
+    """
+    # Getting back the objects:
+    with open('means.pkl', 'rb') as f: 
+        m1, m2 = pickle.load(f) 
+        
+    return w1*eval_norm(x, m1, s1) + w2*eval_norm(x, m2, s2)
+
+def get_intersect(x_data, s1, s2, w1, w2):
+    # Getting back the objects:
+    with open('means.pkl', 'rb') as f: 
+        m1, m2 = pickle.load(f) 
+    
+    g1 =  w1*eval_norm(x_data, m1, s1) 
+    g2 =  w2*eval_norm(x_data, m2, s2) 
+    
+    R0 = np.argmin(abs(
+            g1[int(0.1*len(x_data)) : int(0.9*len(x_data))] -\
+            g2[int(0.1*len(x_data)) : int(0.9*len(x_data))])) +\
+            int(0.1*len(x_data))
+            
+    x0 = x_data[R0]
+    y0 =  w1*eval_norm(x0, m1, s1) 
+            
+    return g1, g2, x0, y0
+
+def optimize_gmm_on_eye_aspect_ratios(aspect_ratios_v0, participant,report_results=False, plot_mixtures=True):
+    """
+    The intersection of the 2 components of the Gaussian Mixture Model is 
+    considered to the threshold R0.
+    """
+    aspect_ratios = aspect_ratios_v0[participant]     
+    
+    # histogram
+    plt.figure() 
+    count, bins, patches = plt.hist(aspect_ratios, constants.NBINS_EYE_ASPECT_RATIO, density=1)
+        
+    # smooth histogram to find local maxima
+    bin_mids = (bins[1:] + bins[:-1]) / 2 # midpoint of  bins
+    window_len=11
+    t_crop = int((window_len -1)/2)
+    y = smooth(count, window_len, window='hanning')
+    y_smooth = y[t_crop : -t_crop]
+
+
+    m1_ind = np.min(np.where(np.sign(np.diff(y_smooth)) == -1))
+    
+    M0 = np.where(np.diff( np.sign(np.diff(y_smooth))) == 2)
+    
+    m1 = bin_mids[m1_ind] # first local maxima
+    m2_ind = np.argmax(y_smooth) # global maxima
+    m2 = bin_mids[m2_ind] # first local maxima
+    
+    plt.plot(bin_mids, y_smooth, 'k--')
+    plt.plot(m1, y_smooth[m1_ind], 'o')
+    plt.plot(m2, y_smooth[m2_ind], 'o')
+    
+    # Saving the objects:
+    with open('means.pkl', 'wb') as f:  # Python 3: open(..., 'wb')
+        pickle.dump([m1, m2], f)
+         
+    
+    aspect_ratios = np.asarray(aspect_ratios)
+    aspect_ratios = aspect_ratios.reshape((-1, 1))
+
+    x_data = bins[0:-1]
+    y_data = count
+    
+
+    
+    params, params_covariance = optimize.curve_fit(gmm_2comp, x_data, y_data,
+                                               p0=[0.2,0.05, 0.7, 0.3])
+    
+    g1, g2, x0, y0 = get_intersect(x_data, params[0], params[1], params[2], params[3])
+    plt.plot(x_data, g1)
+    plt.plot(x_data, g2)
+    plt.plot(x0, y0, 'o')
+    
+    xx0 = x_data[M0]
+    yy0 = y_smooth[M0]
+    plt.plot(xx0, yy0, '*')
+    plt.title('Participant no: ' + participant)
+    
+    return x_data[M0], bin_mids, y_smooth
 
 
 def detect():
